@@ -28,16 +28,6 @@ DEFAULT_NUM_PATCHES = 10
 DEFAULT_RESIZE = (512, 384)
 DEFAULT_CROP_SIZE = 224
 
-# HyperNet architecture parameters (must match training)
-HYPERNET_LDA_OUT_CHANNELS = 16
-HYPERNET_HYPER_IN_CHANNELS = 112
-HYPERNET_TARGET_IN_SIZE = 224
-HYPERNET_TARGET_FC1_SIZE = 112
-HYPERNET_TARGET_FC2_SIZE = 56
-HYPERNET_TARGET_FC3_SIZE = 28
-HYPERNET_TARGET_FC4_SIZE = 14
-HYPERNET_FEATURE_SIZE = 7
-
 
 def create_inference_transform(
     resize: tuple[int, int] = DEFAULT_RESIZE,
@@ -71,16 +61,8 @@ def load_model(model_path: str) -> models.HyperNet:
     Returns:
         Loaded HyperNet model in evaluation mode.
     """
-    model = models.HyperNet(
-        HYPERNET_LDA_OUT_CHANNELS,
-        HYPERNET_HYPER_IN_CHANNELS,
-        HYPERNET_TARGET_IN_SIZE,
-        HYPERNET_TARGET_FC1_SIZE,
-        HYPERNET_TARGET_FC2_SIZE,
-        HYPERNET_TARGET_FC3_SIZE,
-        HYPERNET_TARGET_FC4_SIZE,
-        HYPERNET_FEATURE_SIZE,
-    ).cuda()
+    # HyperNet architecture: lda_out=16, hyper_in=112, target_in=224, fc_sizes=[112,56,28,14], feat=7
+    model = models.HyperNet(16, 112, 224, 112, 56, 28, 14, 7).cuda()
 
     model.load_state_dict(torch.load(model_path))
     model.train(False)
