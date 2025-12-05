@@ -5,22 +5,22 @@ This script evaluates a trained HyperIQA model on multiple test datasets.
 It supports KonIQ, SPAQ, KADID-10K, and AGIQA-3K datasets.
 
 Usage:
-    # Test on KonIQ test set
-    python test.py --checkpoint ./checkpoints/best_checkpoint.pth \\
-                   --test_json ../datasets/metas/koniq_test.json \\
-                   --dataset_root ../datasets \\
-                   --dataset_name koniq
+# Test on KonIQ test set
+python test.py --checkpoint ./checkpoints/best_checkpoint.pth \
+                --test_json ../datasets/metas/koniq_test.json \
+                --dataset_root ../datasets \
+                --dataset_name koniq
     
-    # Test on SPAQ dataset
-    python test.py --checkpoint ./checkpoints/best_checkpoint.pth \\
-                   --test_json ../datasets/metas/spaq_test.json \\
-                   --dataset_root ../datasets \\
-                   --dataset_name spaq
+# Test on SPAQ dataset
+python test.py --checkpoint ./checkpoints/best_checkpoint.pth \
+                --test_json ../datasets/metas/spaq_test.json \
+                --dataset_root ../datasets \
+                --dataset_name spaq
     
-    # Test on all datasets
-    python test.py --checkpoint ./checkpoints/best_checkpoint.pth \\
-                   --dataset_root ../datasets \\
-                   --test_all
+# Test on all datasets
+python test.py --checkpoint ./checkpoints/best_checkpoint.pth \
+                --dataset_root ../datasets \
+                --test_all
 """
 
 import argparse
