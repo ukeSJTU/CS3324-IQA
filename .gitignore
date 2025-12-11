@@ -1,6 +1,10 @@
 # Checkpoints
 hyperIQA/checkpoints/
 
+# Datasets
+datasets/*
+!datasets/.gitkeep
+
 # System files
 .DS_Store
 
