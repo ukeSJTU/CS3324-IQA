@@ -1,4 +1,7 @@
-.claude/*.local.*
+.claude/*
+
+# Ignore the hyperIQA pretrained models
+hyperIQA/pretrained/*
 
 datasets/*
 !datasets/.gitkeep
