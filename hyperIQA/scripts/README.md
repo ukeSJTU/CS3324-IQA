@@ -117,3 +117,30 @@ Evaluate trained HyperIQA model on test datasets.
   }
 }
 ```
+
+---
+
+## Visualization
+
+After training and evaluation, use `visualize.py` to create figures for analysis and reports.
+
+**See `VISUALIZATION.md` for detailed documentation.**
+
+**Quick examples:**
+```bash
+# Plot training curves
+python visualize.py --mode training \
+    --input ../checkpoints/lr2e-5_bs96_ep16_val0.1_seed42/metrics.json \
+    --output ../figures/
+
+# Plot evaluation results
+python visualize.py --mode evaluation \
+    --input ../checkpoints/lr2e-5_bs96_ep16_val0.1_seed42/eval_results.json \
+    --output ../figures/
+
+# Compare multiple experiments
+python visualize.py --mode compare-training \
+    --input exp1/metrics.json exp2/metrics.json exp3/metrics.json \
+    --labels "Exp1" "Exp2" "Exp3" \
+    --output ../figures/comparison/
+```
