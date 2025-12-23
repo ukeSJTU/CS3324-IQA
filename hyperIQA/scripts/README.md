@@ -71,4 +71,49 @@ Train HyperIQA model on KonIQ dataset.
 
 ## evaluate.sh
 
-TODO: Evaluate model on test datasets (to be implemented)
+Evaluate trained HyperIQA model on test datasets.
+
+**From hyperIQA directory:**
+```bash
+./scripts/evaluate.sh [CHECKPOINT_FOLDER or MODEL_PATH] [DATASETS] [PATCH_NUM]
+```
+
+**Default values:**
+- CHECKPOINT_FOLDER: ../checkpoints/latest/best_model.pkl
+- DATASETS: all (koniq_test, spaq_test, kadid_test, agiqa_test)
+- PATCH_NUM: 25
+
+**Examples:**
+```bash
+# Evaluate best model in checkpoint folder (auto-finds best_model.pkl)
+./scripts/evaluate.sh ../checkpoints/lr2e-5_bs96_ep16_val0.1_seed42/
+
+# Evaluate specific model file
+./scripts/evaluate.sh ../checkpoints/lr2e-5_bs96_ep16_val0.1_seed42/best_model.pkl
+
+# Evaluate on specific datasets only
+./scripts/evaluate.sh ../checkpoints/.../best_model.pkl "koniq_test spaq_test"
+
+# Custom patch number
+./scripts/evaluate.sh ../checkpoints/.../best_model.pkl all 50
+```
+
+**Output:**
+- `eval_results.json` saved in checkpoint folder
+- Contains aggregate metrics (SRCC, PLCC) and per-image predictions
+- See `EVALUATION.md` for detailed documentation
+
+**eval_results.json structure:**
+```json
+{
+  "datasets": {
+    "koniq_test": {
+      "metrics": {"srcc": 0.82, "plcc": 0.81, "num_samples": 2073},
+      "predictions": [
+        {"image": "koniq_test/xxx.jpg", "predicted": 75.3, "ground_truth": 68.7},
+        ...
+      ]
+    }
+  }
+}
+```

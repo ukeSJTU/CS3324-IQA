@@ -4,6 +4,7 @@
 hyperIQA/pretrained/*
 
 # Ignore checkpoints
+checkpoints/*
 hyperIQA/checkpoints/*
 
 # Ignore test.log
