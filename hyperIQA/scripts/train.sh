@@ -1,17 +1,19 @@
 #!/bin/bash
-# Train HyperIQA model on specified dataset
+# Train HyperIQA model on KonIQ dataset
 
-# TODO: Add training script after refactoring train_test_IQA.py
+# Parse command line arguments with defaults
+LR="${1:-2e-5}"
+BATCH_SIZE="${2:-96}"
+EPOCHS="${3:-16}"
+VAL_SPLIT="${4:-0.1}"
+SEED="${5:-42}"
 
-# Activate conda environment
-source scripts/env.sh
+# Run training from hyperIQA directory
+cd "$(dirname "$0")/.."
 
-# Example usage (to be updated):
-# cd hyperIQA
-# python train.py \
-#     --dataset koniq-10k \
-#     --batch_size 96 \
-#     --epochs 16 \
-#     --lr 2e-5
-
-echo "Training script not yet implemented. Refactor train_test_IQA.py first."
+python train.py \
+    --lr "$LR" \
+    --batch_size "$BATCH_SIZE" \
+    --epochs "$EPOCHS" \
+    --val_split "$VAL_SPLIT" \
+    --seed "$SEED"

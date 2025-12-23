@@ -3,6 +3,12 @@
 # Ignore the hyperIQA pretrained models
 hyperIQA/pretrained/*
 
+# Ignore checkpoints
+hyperIQA/checkpoints/*
+
+# Ignore test.log
+hyperIQA/test.log
+
 datasets/*
 !datasets/.gitkeep
 

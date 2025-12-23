@@ -30,7 +30,44 @@ Run inference on a single image to get quality score.
 
 ## train.sh
 
-TODO: Train model on dataset (to be implemented)
+Train HyperIQA model on KonIQ dataset.
+
+**From hyperIQA directory:**
+```bash
+./scripts/train.sh [LR] [BATCH_SIZE] [EPOCHS] [VAL_SPLIT] [SEED]
+```
+
+**Default values:**
+- LR: 2e-5
+- BATCH_SIZE: 96
+- EPOCHS: 16
+- VAL_SPLIT: 0.1 (10% validation)
+- SEED: 42
+
+**Examples:**
+```bash
+# Use all defaults
+./scripts/train.sh
+
+# Custom learning rate
+./scripts/train.sh 1e-5
+
+# Custom LR and batch size
+./scripts/train.sh 1e-5 64
+
+# All custom parameters
+./scripts/train.sh 5e-5 128 32 0.2 123
+```
+
+**Output:**
+- Checkpoints saved to `../checkpoints/lr{lr}_bs{bs}_ep{ep}_val{val}_seed{seed}/`
+- See `TRAINING.md` for detailed documentation
+
+**Checkpoint folder contains:**
+- `best_model.pkl` - Best model weights
+- `metrics.json` - Training metrics for visualization
+- `args.json` - All training arguments
+- `train.log` - Training logs
 
 ## evaluate.sh
 
