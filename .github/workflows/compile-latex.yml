@@ -1,0 +1,53 @@
+name: Compile LaTeX Report
+
+on:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'report/**'
+      - '.github/workflows/compile-latex.yml'
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'report/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Compile LaTeX document
+      uses: xu-cheng/latex-action@v3
+      with:
+        root_file: final_report.tex
+        working_directory: report
+        args: -pdf -interaction=nonstopmode -halt-on-error
+
+    - name: Upload PDF artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PyramidIQA-Report
+        path: report/final_report.pdf
+
+    - name: Create output directory for GitHub Pages
+      run: |
+        mkdir -p public
+        cp report/final_report.pdf public/
+        echo "<html><head><meta http-equiv='refresh' content='0; url=final_report.pdf'></head></html>" > public/index.html
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
+        publish_branch: gh-pages

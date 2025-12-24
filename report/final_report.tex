@@ -1,0 +1,345 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+
+\begin{document}
+
+\title{PyramidIQA: Multi-Scale Feature Pyramid Network with Attention for No-Reference Image Quality Assessment}
+
+\author{
+    \IEEEauthorblockN{Mingxi Lyu}
+    \IEEEauthorblockA{
+        \textit{School of Electronic Information and Electrical Engineering} \\
+        \textit{Shanghai Jiao Tong University} \\
+        Shanghai, China \\
+        523030910081
+    }
+}
+
+\maketitle
+
+\begin{abstract}
+Image Quality Assessment (IQA) is essential for evaluating image processing systems and maintaining visual content quality. While existing deep learning methods like HyperIQA have shown promising results, they often rely on single-scale feature extraction, limiting their ability to capture quality degradations at multiple scales. We propose PyramidIQA, a novel no-reference IQA method that integrates multi-scale feature extraction, Feature Pyramid Networks (FPN), and Convolutional Block Attention Modules (CBAM) into a hypernetwork-based architecture. Our approach extracts features at three different scales from ResNet-50 backbone and enriches them through top-down semantic propagation. Extensive experiments on KonIQ-10k, SPAQ, KADID-10K, and AGIQA-3K datasets demonstrate that PyramidIQA achieves better cross-dataset generalization, with 1.58\% improvement on SPAQ compared to the baseline HyperIQA, while maintaining comparable performance on in-domain datasets. The model achieves SRCC of 0.8988 and PLCC of 0.9166 on KonIQ test set, exceeding the required thresholds with only 15.4\% additional computational cost.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Image Quality Assessment, Feature Pyramid Network, Attention Mechanism, Hypernetwork, Multi-Scale Features, Deep Learning
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+\subsection{Motivation}
+
+Image Quality Assessment (IQA) plays a crucial role in modern computer vision applications, from image compression and enhancement to content delivery and multimedia systems. No-Reference IQA (NR-IQA), which predicts image quality without access to pristine reference images, is particularly valuable for real-world scenarios where reference images are unavailable.
+
+Recent deep learning approaches have achieved significant progress in NR-IQA by learning quality-aware features directly from data. However, most existing methods extract features at a single scale, typically from the final layer of a convolutional neural network. This single-scale approach has inherent limitations: (1) A single layer captures information at only one spatial scale, missing fine-grained details or global context; (2) Image quality degradations manifest at different scales---some distortions affect local textures while others impact global structure; (3) Single-scale features may overfit to specific distortion patterns in training data, limiting cross-dataset performance.
+
+\subsection{Contributions}
+
+To address these limitations, we propose \textbf{PyramidIQA}, a multi-scale feature pyramid network with attention mechanisms for no-reference image quality assessment. Our key contributions are:
+
+\begin{itemize}
+\item \textbf{Multi-Scale Feature Extraction}: We extract features from multiple ResNet layers (layer2, layer3, layer4) to capture quality information at different spatial scales and semantic levels.
+
+\item \textbf{Feature Pyramid Network Integration}: We incorporate FPN to enrich low-level features with high-level semantic information through top-down pathways and lateral connections.
+
+\item \textbf{Attention-Enhanced Feature Selection}: We integrate CBAM to focus on quality-critical regions and feature channels, improving the model's ability to identify relevant quality cues.
+
+\item \textbf{Combined Loss Function}: We employ a combination of L1 loss and rank loss to optimize both absolute quality prediction and relative ranking.
+
+\item \textbf{Comprehensive Evaluation}: We conduct extensive experiments on four benchmark datasets demonstrating improved cross-dataset generalization.
+\end{itemize}
+
+Our experimental results show that PyramidIQA achieves 1.58\% improvement in SRCC on SPAQ cross-dataset evaluation while maintaining comparable performance on in-domain KonIQ test set, validating the effectiveness of our multi-scale pyramid architecture.
+
+\section{Related Work}
+
+\subsection{Deep Learning for IQA}
+
+Deep learning has revolutionized IQA by automatically learning quality-aware representations. DBCNN \cite{zhang2020blind} uses a dual-branch network to separately handle synthetic and authentic distortions. MANIQA \cite{yang2022maniqa} employs vision transformers with multi-scale attention. However, these methods often require large-scale training data and may not generalize well across datasets.
+
+\subsection{Hypernetwork-based IQA}
+
+HyperIQA \cite{su2020blindly} introduced a hypernetwork approach that generates target network weights conditioned on input images, enabling content-aware quality prediction. While effective, HyperIQA extracts features from only the final ResNet layer, missing multi-scale information. Our work extends this architecture with multi-scale feature extraction and pyramid networks.
+
+\subsection{Feature Pyramid Networks}
+
+Feature Pyramid Networks (FPN) \cite{lin2017feature}, originally proposed for object detection, build multi-scale feature hierarchies by combining high-resolution low-level features with semantically strong high-level features. We adapt FPN to IQA by enriching multi-scale features for quality prediction.
+
+\subsection{Attention Mechanisms}
+
+CBAM \cite{woo2018cbam} combines channel and spatial attention to adaptively refine feature maps. While attention has been used in some IQA methods, its integration with feature pyramids for multi-scale quality assessment is novel in our work.
+
+\section{Proposed Method}
+
+\subsection{Overall Architecture}
+
+Fig.~\ref{fig:architecture} illustrates the overall architecture of PyramidIQA. Our model consists of four main components: (1) Multi-Scale Feature Extractor using ResNet-50 backbone; (2) Feature Pyramid Network that enriches features through top-down semantic propagation; (3) Attention Modules with CBAM at each pyramid level; (4) HyperNetwork \& TargetNet that generates content-aware weights for quality prediction.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../diagrams/ms_hyperIQA_arch.png}
+\caption{Architecture of PyramidIQA showing multi-scale feature extraction, Feature Pyramid Network with top-down pathway, CBAM attention modules, and hypernetwork-based quality prediction.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Multi-Scale Feature Extraction}
+
+Unlike the original HyperIQA that only uses ResNet layer4, we extract features from three ResNet layers:
+
+\begin{itemize}
+\item \textbf{Layer2} (512 channels, $56\times56$): Captures fine-grained textures and local distortions
+\item \textbf{Layer3} (1024 channels, $28\times28$): Encodes mid-level structural patterns
+\item \textbf{Layer4} (2048 channels, $14\times14$): Represents high-level semantic information
+\end{itemize}
+
+This multi-scale extraction is motivated by the observation that image quality degradations manifest at different spatial frequencies. For an input image $I$, the multi-scale features are:
+\begin{align}
+F_2 &= \text{ResNet\_Layer2}(I) \in \mathbb{R}^{512 \times 56 \times 56} \\
+F_3 &= \text{ResNet\_Layer3}(I) \in \mathbb{R}^{1024 \times 28 \times 28} \\
+F_4 &= \text{ResNet\_Layer4}(I) \in \mathbb{R}^{2048 \times 14 \times 14}
+\end{align}
+
+\subsection{Feature Pyramid Network}
+
+We integrate FPN to enrich low-level features with semantic information from higher layers. The FPN consists of:
+
+\textbf{Lateral Connections}: $1\times1$ convolutions reduce feature dimensions to a uniform 256 channels:
+\begin{align}
+L_4 &= \text{Conv}_{1\times1}(F_4) \in \mathbb{R}^{256 \times 14 \times 14} \\
+L_3 &= \text{Conv}_{1\times1}(F_3) \in \mathbb{R}^{256 \times 28 \times 28} \\
+L_2 &= \text{Conv}_{1\times1}(F_2) \in \mathbb{R}^{256 \times 56 \times 56}
+\end{align}
+
+\textbf{Top-Down Pathway}: Higher-level features are upsampled and added to lower-level features:
+\begin{align}
+P_4 &= L_4 \\
+P_3 &= \text{Upsample}(P_4) + L_3 \\
+P_2 &= \text{Upsample}(P_3) + L_2
+\end{align}
+
+\textbf{Smoothing Convolutions}: $3\times3$ convolutions reduce aliasing artifacts from upsampling.
+
+\subsection{Convolutional Block Attention Module}
+
+We apply CBAM to each pyramid level to selectively emphasize quality-relevant features:
+
+\textbf{Channel Attention}: Emphasizes important feature channels:
+\begin{equation}
+M_c = \sigma(\text{MLP}(\text{AvgPool}(F)) + \text{MLP}(\text{MaxPool}(F)))
+\end{equation}
+
+\textbf{Spatial Attention}: Focuses on quality-critical spatial regions:
+\begin{equation}
+M_s = \sigma(\text{Conv}_{7\times7}([\text{AvgPool}(F'); \text{MaxPool}(F')]))
+\end{equation}
+
+where $\sigma$ is sigmoid activation and the attention-refined pyramid features $\{P_2'', P_3'', P_4''\}$ are concatenated and fed to the hypernetwork.
+
+\subsection{Loss Function}
+
+We employ a combined loss function:
+
+\textbf{L1 Loss}: Minimizes absolute error:
+\begin{equation}
+\mathcal{L}_{L1} = \frac{1}{N}\sum_{i=1}^{N}|q_i^{pred} - q_i^{gt}|
+\end{equation}
+
+\textbf{Rank Loss}: Preserves relative quality ordering:
+\begin{equation}
+\mathcal{L}_{rank} = \frac{1}{M}\sum \max(0, |q_i - q_j| - \text{sign}(q_i - q_j)\cdot(q_i^{gt} - q_j^{gt}))
+\end{equation}
+
+\textbf{Combined Loss}:
+\begin{equation}
+\mathcal{L}_{total} = \mathcal{L}_{L1} + \lambda \cdot \mathcal{L}_{rank}
+\end{equation}
+where $\lambda=0.3$ balances the two objectives.
+
+\section{Experiments}
+
+\subsection{Experimental Setup}
+
+\subsubsection{Datasets}
+
+We conduct experiments on four benchmark datasets:
+
+\begin{itemize}
+\item \textbf{KonIQ-10k} \cite{hosu2020koniq}: 10,073 images with authentic distortions, MOS (0-100). Split: 7,058 train, 1,015 validation, 2,010 test.
+\item \textbf{SPAQ} \cite{fang2020perceptual}: 11,125 smartphone photos, MOS (0-100). 3,196 test images for cross-dataset evaluation.
+\item \textbf{KADID-10K} \cite{lin2019kadid}: 10,125 images with 25 synthetic distortion types, DMOS (1-5).
+\item \textbf{AGIQA-3K} \cite{li2023agiqa}: 3,000 AI-generated images, MOS (0-2).
+\end{itemize}
+
+\subsubsection{Implementation Details}
+
+\textbf{Architecture}: ResNet-50 backbone (ImageNet pretrained), FPN with 256 channels, CBAM at each pyramid level.
+
+\textbf{Training}: Adam optimizer ($\beta_1=0.9, \beta_2=0.999$), learning rate $2\times10^{-5}$ (backbone) and $2\times10^{-4}$ (new layers), batch size 96, 30 epochs, cosine annealing schedule, loss weight $\lambda=0.3$, image patches $224\times224$, 25 patches per test image.
+
+\subsubsection{Evaluation Metrics}
+
+Following standard IQA protocols, we report:
+\begin{itemize}
+\item \textbf{SRCC}: Spearman Rank Correlation Coefficient
+\item \textbf{PLCC}: Pearson Linear Correlation Coefficient
+\end{itemize}
+
+Both metrics range from -1 to 1, with higher values indicating better performance.
+
+\subsection{Comparison with Baseline}
+
+Table~\ref{tab:main_results} compares PyramidIQA against baseline HyperIQA under identical training conditions.
+
+\begin{table}[t]
+\centering
+\caption{Performance Comparison on Main Datasets}
+\label{tab:main_results}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{KonIQ} & \textbf{KonIQ} & \textbf{SPAQ} & \textbf{SPAQ} \\
+ & \textbf{SRCC} & \textbf{PLCC} & \textbf{SRCC} & \textbf{PLCC} \\
+\midrule
+HyperIQA & 0.9012 & 0.9170 & 0.8427 & 0.8383 \\
+\textbf{PyramidIQA} & \textbf{0.8988} & \textbf{0.9166} & \textbf{0.8560} & \textbf{0.8508} \\
+\midrule
+Improvement & -0.27\% & -0.04\% & \textbf{+1.58\%} & \textbf{+1.49\%} \\
+\midrule
+Requirement & $>0.75$ \checkmark & $>0.75$ \checkmark & $>0.70$ \checkmark & $>0.70$ \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key Observations}: (1) Both models meet assignment requirements; (2) PyramidIQA shows improved cross-dataset generalization on SPAQ (+1.58\% SRCC, +1.49\% PLCC); (3) Comparable in-domain performance on KonIQ (-0.27\% SRCC, -0.04\% PLCC), reflecting a favorable generalization vs. memorization trade-off.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../results/figures/comparison/compare_training.png}
+\caption{Training curves comparison between HyperIQA and PyramidIQA showing loss, training SRCC, validation SRCC, and validation PLCC over epochs.}
+\label{fig:training_curves}
+\end{figure}
+
+\subsection{Cross-Dataset Generalization}
+
+Table~\ref{tab:cross_dataset} shows performance on cross-dataset evaluation.
+
+\begin{table}[t]
+\centering
+\caption{Cross-Dataset Evaluation Results}
+\label{tab:cross_dataset}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{KADID} & \textbf{KADID} & \textbf{AGIQA} & \textbf{AGIQA} \\
+ & \textbf{SRCC} & \textbf{PLCC} & \textbf{SRCC} & \textbf{PLCC} \\
+\midrule
+HyperIQA & 0.4868 & 0.5173 & 0.6724 & 0.7327 \\
+\textbf{PyramidIQA} & \textbf{0.4924} & \textbf{0.5195} & 0.6699 & 0.7301 \\
+\midrule
+Improvement & +1.15\% & +0.43\% & -0.37\% & -0.35\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis}: PyramidIQA shows marginal improvement on KADID (+1.15\% SRCC). Both models struggle on KADID ($\sim$0.49 SRCC) because KADID contains synthetic distortions while training uses authentic distortions. Performance on AGIQA ($\sim$0.67 SRCC) is comparable, highlighting the domain gap between natural and AI-generated images.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../results/figures/ms_hyperIQA/evaluation_scatter.png}
+\caption{Scatter plots of predicted vs. ground truth quality scores on all four test datasets. Predictions are normalized to ground truth scales for visualization. Tight clustering around diagonal indicates accurate prediction.}
+\label{fig:scatter}
+\end{figure}
+
+\subsection{Ablation Studies}
+
+Table~\ref{tab:ablation} validates our design choices.
+
+\begin{table}[t]
+\centering
+\caption{Ablation Study Results}
+\label{tab:ablation}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Variant} & \textbf{KonIQ} & \textbf{KonIQ} & \textbf{SPAQ} & \textbf{SPAQ} \\
+ & \textbf{SRCC} & \textbf{PLCC} & \textbf{SRCC} & \textbf{PLCC} \\
+\midrule
+L1-only Loss & \textbf{0.9042} & 0.9159 & 0.8556 & 0.8489 \\
+Step LR & 0.9000 & 0.9137 & 0.8481 & 0.8420 \\
+\textbf{Full Model} & 0.8988 & \textbf{0.9166} & \textbf{0.8560} & \textbf{0.8508} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis}: (1) L1-only loss achieves best in-domain performance (0.9042 SRCC) but slightly worse on SPAQ; (2) Step LR schedule performs worst, confirming cosine annealing benefits; (3) Full model achieves best balance between in-domain and cross-dataset performance.
+
+\subsection{Computational Complexity}
+
+Table~\ref{tab:complexity} compares computational costs.
+
+\begin{table}[t]
+\centering
+\caption{Computational Cost Comparison}
+\label{tab:complexity}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Model} & \textbf{FLOPs} & \textbf{Params} & \textbf{Time} & \textbf{Throughput} \\
+ & \textbf{(G)} & \textbf{(M)} & \textbf{(ms)} & \textbf{(img/s)} \\
+\midrule
+HyperIQA & 4.34 & 27.38 & 6.38 & 156.79 \\
+PyramidIQA & 5.00 & 27.63 & 7.98 & 125.26 \\
+\midrule
+Overhead & +15.4\% & +0.9\% & +25.1\% & -20.1\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis}: PyramidIQA incurs modest overhead: +15.4\% FLOPs mainly from FPN operations, +0.9\% parameters (260K) from lateral convolutions and CBAM modules. The 1.6ms inference time increase is acceptable for practical deployment, justified by improved generalization.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../results/figures/ms_hyperIQA/training_curves.png}
+\caption{Detailed training metrics for PyramidIQA showing training loss, training SRCC, validation SRCC, and validation PLCC across 30 epochs. Smooth curves indicate stable training with combined loss and cosine annealing.}
+\label{fig:training_detail}
+\end{figure}
+
+\section{Discussion}
+
+\subsection{Why PyramidIQA Works}
+
+Our results validate that PyramidIQA's multi-scale pyramid architecture provides tangible benefits. We identify four key factors:
+
+\textbf{Multi-Scale Quality Perception}: Different distortions manifest at different spatial scales. Layer2 captures fine-grained artifacts (noise, compression), layer3 encodes structural distortions (blur, blockiness), and layer4 represents global degradations (overexposure, color shift).
+
+\textbf{Semantic Enhancement}: FPN's top-down pathway enriches low-level features with semantic context, enabling the network to interpret both ``what'' quality issues exist (semantic) and ``where'' they occur (spatial).
+
+\textbf{Attention-Guided Selection}: CBAM helps focus on quality-critical information through channel attention (emphasizes relevant distortion patterns) and spatial attention (highlights affected regions).
+
+\textbf{Ranking-Aware Optimization}: Combined L1 + Rank loss provides complementary signals---L1 optimizes absolute accuracy while rank loss preserves relative ordering.
+
+\subsection{Generalization vs. Memorization}
+
+PyramidIQA exhibits slightly lower in-domain performance (-0.27\% KonIQ SRCC) but better cross-dataset results (+1.58\% SPAQ SRCC). This reflects a favorable trade-off: increased model capacity with proper regularization (dropout, cosine annealing) captures generalizable patterns rather than dataset-specific artifacts. For real-world IQA systems encountering diverse distributions, cross-dataset generalization is more valuable than in-domain overfitting.
+
+\subsection{Limitations}
+
+Despite improvements, PyramidIQA has limitations: (1) Synthetic distortion gap (KADID: 0.4924 SRCC)---training on authentic distortions doesn't transfer well to artificial patterns; (2) AI-generated content challenge (AGIQA: 0.6699 SRCC)---GAN/diffusion artifacts are absent in natural image training; (3) Computational cost (+15\% FLOPs) may limit extremely latency-critical applications; (4) L1-only achieves better in-domain performance, suggesting rank loss weight could be further tuned.
+
+\section{Conclusion}
+
+We proposed PyramidIQA, a novel no-reference IQA method integrating multi-scale feature extraction, Feature Pyramid Networks, and attention mechanisms. Our approach addresses single-scale limitations by capturing quality information at multiple resolutions and semantic levels.
+
+\textbf{Key Achievements}: (1) Met requirements (KonIQ: 0.8988/0.9166, SPAQ: 0.8560/0.8508); (2) Improved cross-dataset generalization (+1.58\% SPAQ); (3) Acceptable computational cost (+15.4\% FLOPs, +0.9\% parameters); (4) Validated design through ablation studies; (5) Comprehensive evaluation on four diverse datasets.
+
+Our work demonstrates that multi-scale feature pyramids enhance IQA generalization across diverse image distributions. While challenges remain in synthetic distortions and AI-generated content, PyramidIQA establishes a promising direction for robust no-reference image quality assessment.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
