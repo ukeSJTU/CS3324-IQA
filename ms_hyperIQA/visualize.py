@@ -124,15 +124,21 @@ def plot_evaluation_scatter(eval_path, output_dir, fmt='png', dpi=300):
         ax = axes[idx]
         predictions = data['predictions']
 
-        preds = [p['predicted'] for p in predictions]
-        gts = [p['ground_truth'] for p in predictions]
+        preds = np.array([p['predicted'] for p in predictions])
+        gts = np.array([p['ground_truth'] for p in predictions])
+
+        # Normalize predictions to ground truth scale for better visualization
+        # This doesn't affect SRCC/PLCC which are scale-invariant
+        gt_min, gt_max = gts.min(), gts.max()
+        pred_min, pred_max = preds.min(), preds.max()
+        preds_normalized = (preds - pred_min) / (pred_max - pred_min) * (gt_max - gt_min) + gt_min
 
         # Scatter plot
-        ax.scatter(gts, preds, alpha=0.5, s=20, edgecolors='none')
+        ax.scatter(gts, preds_normalized, alpha=0.5, s=20, edgecolors='none')
 
         # Perfect prediction line
-        min_val = min(min(gts), min(preds))
-        max_val = max(max(gts), max(preds))
+        min_val = min(gt_min, preds_normalized.min())
+        max_val = max(gt_max, preds_normalized.max())
         ax.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2, label='Perfect')
 
         # Metrics text
