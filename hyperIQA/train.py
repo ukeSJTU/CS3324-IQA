@@ -6,6 +6,7 @@ import os
 import json
 import argparse
 import random
+from datetime import datetime
 import numpy as np
 import torch
 import torch.utils.data
@@ -72,8 +73,9 @@ def set_seed(seed):
 def create_checkpoint_dir(args):
     """Create checkpoint directory with auto-generated name"""
     if args.checkpoint_dir is None:
-        # Auto-generate folder name with key hyperparameters
-        folder_name = f"lr{args.lr}_bs{args.batch_size}_ep{args.epochs}_val{args.val_split}_seed{args.seed}"
+        # Auto-generate folder name with key hyperparameters + timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        folder_name = f"lr{args.lr}_bs{args.batch_size}_ep{args.epochs}_val{args.val_split}_seed{args.seed}_{timestamp}"
         checkpoint_dir = os.path.join('../checkpoints', folder_name)
     else:
         checkpoint_dir = args.checkpoint_dir
@@ -91,28 +93,53 @@ def create_checkpoint_dir(args):
 
 def get_train_val_loaders(args, logger):
     """Create train and validation data loaders"""
-    # Load full training dataset
-    full_dataset = IQADataset(
+    # Load JSON metadata
+    with open(args.train_json, 'r') as f:
+        data = json.load(f)
+
+    # Split at IMAGE level (not patch level) to ensure validation has complete patch groups
+    num_images = len(data)
+    val_num_images = int(num_images * args.val_split)
+    train_num_images = num_images - val_num_images
+
+    # Shuffle images with seed for reproducibility
+    rng = random.Random(args.seed)
+    rng.shuffle(data)
+
+    train_data = data[:train_num_images]
+    val_data = data[train_num_images:]
+
+    logger.info(f"Dataset split: {train_num_images} train images, {val_num_images} val images (ratio: {1-args.val_split:.2f}/{args.val_split:.2f})")
+
+    # Save split data to temporary JSON files
+    train_split_json = os.path.join(os.path.dirname(args.train_json), '.tmp_train_split.json')
+    val_split_json = os.path.join(os.path.dirname(args.train_json), '.tmp_val_split.json')
+
+    with open(train_split_json, 'w') as f:
+        json.dump(train_data, f)
+    with open(val_split_json, 'w') as f:
+        json.dump(val_data, f)
+
+    # Create separate train and validation datasets with their respective patch numbers
+    train_dataset = IQADataset(
         dataset_root=args.dataset_root,
-        json_path=args.train_json,
+        json_path=train_split_json,
         patch_size=args.patch_size,
         patch_num=args.train_patch_num,
         is_train=True,
         resize_size=(512, 384)
     )
 
-    # Split into train and validation
-    total_size = len(full_dataset)
-    val_size = int(total_size * args.val_split)
-    train_size = total_size - val_size
-
-    train_dataset, val_dataset = torch.utils.data.random_split(
-        full_dataset,
-        [train_size, val_size],
-        generator=torch.Generator().manual_seed(args.seed)
+    val_dataset = IQADataset(
+        dataset_root=args.dataset_root,
+        json_path=val_split_json,
+        patch_size=args.patch_size,
+        patch_num=args.val_patch_num,
+        is_train=False,  # Use test-time transforms for validation
+        resize_size=(512, 384)
     )
 
-    logger.info(f"Dataset split: {train_size} train, {val_size} val (ratio: {1-args.val_split:.2f}/{args.val_split:.2f})")
+    logger.info(f"Total samples after patch expansion: {len(train_dataset)} train, {len(val_dataset)} val")
 
     # Create data loaders
     train_loader = torch.utils.data.DataLoader(

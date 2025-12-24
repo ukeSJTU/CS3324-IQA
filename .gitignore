@@ -13,4 +13,7 @@ hyperIQA/test.log
 datasets/*
 !datasets/.gitkeep
 
+# Ignore temporary train/val split files
+datasets/metas/.tmp_*.json
+
 __pycache__/
