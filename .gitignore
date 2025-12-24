@@ -20,3 +20,21 @@ datasets/*
 datasets/metas/.tmp_*.json
 
 __pycache__/
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+*.lof
+*.lot
