@@ -1,4 +1,6 @@
 .claude/*
+CLAUDE.md
+.vscode/*
 env.sh
 
 # Ignore the hyperIQA pretrained models
